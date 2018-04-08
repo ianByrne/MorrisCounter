@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Unosquare.RaspberryIO.Gpio;
 
 namespace MorrisCounter.Elements
@@ -12,7 +11,6 @@ namespace MorrisCounter.Elements
         private readonly string sensorLocation;
         private readonly IrSpotlight irSpotlight;
         private readonly Photo photo;
-        private readonly IotHubMessage iotHubMessage;
 
         /// <summary>
         /// Enables the sensor, and listens for motion detection
@@ -25,8 +23,7 @@ namespace MorrisCounter.Elements
         {
             this.sensorLocation = sensorLocation;
             irSpotlight = new IrSpotlight(spotlightPin);
-            photo = new Photo(sensorLocation);
-            iotHubMessage = new IotHubMessage(iotHubDeviceId);
+            photo = new Photo(sensorLocation, iotHubDeviceId);
 
             Console.WriteLine($"Enabling {sensorLocation} sensor");
             sensorPin.PinMode = GpioPinDriveMode.Input;
@@ -46,13 +43,7 @@ namespace MorrisCounter.Elements
             await photo.TakePhoto();
             irSpotlight.SwitchOff();
 
-            // Upload the photo, and send the IoTHub message, both in parallel
-            Task uploadPhotoToAzure = Task.Run(async () => await photo.UploadPhotoToAzure(motionDetectedDateTime));
-            Task sendMessageToIotHub = Task.Run(async () => await iotHubMessage.SendMessageToIotHub(motionDetectedDateTime, sensorLocation));
-
-            // ... And wait for them to finish
-            await uploadPhotoToAzure;
-            await sendMessageToIotHub;
+            await photo.UploadPhotoToAzure(motionDetectedDateTime);
         }
     }
 }

@@ -1,7 +1,6 @@
-﻿using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Auth;
-using Microsoft.WindowsAzure.Storage.Blob;
+﻿using Microsoft.Azure.Devices.Client;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Unosquare.RaspberryIO;
 using Unosquare.RaspberryIO.Camera;
@@ -15,26 +14,21 @@ namespace MorrisCounter.Elements
     {
         private readonly string cameraLocation;
         private byte[] pictureBytes;
-        private readonly StorageCredentials storageCredentials;
-        private readonly CloudStorageAccount cloudStorageAccount;
-        private readonly CloudBlobClient cloudBlobClient;
-        private readonly CloudBlobContainer cloudBlobContainer;
+        private DeviceClient deviceClient;
 
         /// <summary>
-        /// Prepares the Cloud Storage client and container
+        /// Prepares the IoTHub client
         /// </summary>
         /// <param name="cameraLocation">The location of the camera</param>
-        public Photo(string cameraLocation)
+        public Photo(string cameraLocation, string deviceId)
         {
             this.cameraLocation = cameraLocation;
 
-            string storageAccountName = Environment.GetEnvironmentVariable("storageAccountName");
-            string storageAccountKey = Environment.GetEnvironmentVariable("storageAccountKey");
+            string iotHubUri = Environment.GetEnvironmentVariable("iotHubUri");
+            string deviceKey = Environment.GetEnvironmentVariable("iotHubDeviceKey");
 
-            storageCredentials = new StorageCredentials(storageAccountName, storageAccountKey);
-            cloudStorageAccount = new CloudStorageAccount(storageCredentials, true);
-            cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            cloudBlobContainer = cloudBlobClient.GetContainerReference(cameraLocation);
+            deviceClient = DeviceClient.Create(iotHubUri, new DeviceAuthenticationWithRegistrySymmetricKey(deviceId, deviceKey), TransportType.Mqtt);
+            deviceClient.ProductInfo = "MorrisCounter"; // I have no idea what this is
         }
 
         /// <summary>
@@ -64,7 +58,7 @@ namespace MorrisCounter.Elements
         }
 
         /// <summary>
-        /// Uploads the photo to Azure Cloud Storage
+        /// Uploads the photo to Azure IoTHub (which is linked to Cloud Storage)
         /// </summary>
         /// <param name="timestamp">The timestamp of the detection</param>
         /// <returns></returns>
@@ -73,11 +67,10 @@ namespace MorrisCounter.Elements
             if (pictureBytes != null && pictureBytes.Length > 0)
             {
                 string filename = cameraLocation + " " + timestamp.ToString("yyyy-MM-dd HH:mm:ss") + ".jpeg";
-                CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(filename);
 
                 Console.WriteLine($"Uploading '{filename}'");
 
-                await cloudBlockBlob.UploadFromByteArrayAsync(pictureBytes, 0, pictureBytes.Length);
+                await deviceClient.UploadToBlobAsync(filename, new MemoryStream(pictureBytes));
 
                 Console.WriteLine($"'{filename}' uploaded");
             }
