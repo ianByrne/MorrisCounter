@@ -1,7 +1,7 @@
 ﻿using System;
 using Unosquare.RaspberryIO.Gpio;
 
-namespace MorrisCounter.Elements
+namespace MorrisCounter.Entities
 {
     /// <summary>
     /// Handles an infrared spotlight to illuminate dark areas at night

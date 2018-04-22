@@ -1,6 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
-using MorrisCounter.Elements;
+using MorrisCounter.Entities;
 using System.IO;
 using System.Collections.Generic;
 using Unosquare.RaspberryIO;

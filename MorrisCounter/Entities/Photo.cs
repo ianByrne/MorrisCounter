@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Unosquare.RaspberryIO;
 using Unosquare.RaspberryIO.Camera;
 
-namespace MorrisCounter.Elements
+namespace MorrisCounter.Entities
 {
     /// <summary>
     /// Handles the taking of a photo with the NoIR Camera, and uploading it to Azure Cloud Storage
@@ -37,24 +37,31 @@ namespace MorrisCounter.Elements
         /// <returns></returns>
         public async Task TakePhoto()
         {
-            CameraStillSettings cameraStillSettings = new CameraStillSettings()
+            if (Pi.Camera.IsBusy)
             {
-                CaptureDisplayPreview = false,
-                CaptureEncoding = CameraImageEncodingFormat.Jpg,
-                CaptureDynamicRangeCompensation = CameraDynamicRangeCompensation.Medium,
-                CaptureExposure = CameraExposureMode.Night,
-                CaptureHeight = 0,
-                CaptureWidth = 0,
-                CaptureJpegQuality = 100,
-                CaptureMeteringMode = CameraMeteringMode.Spot,
-                VerticalFlip = true
-            };
+                Console.WriteLine($"Camera currently busy");
+            }
+            else
+            {
+                CameraStillSettings cameraStillSettings = new CameraStillSettings()
+                {
+                    CaptureDisplayPreview = false,
+                    CaptureEncoding = CameraImageEncodingFormat.Jpg,
+                    CaptureDynamicRangeCompensation = CameraDynamicRangeCompensation.Medium,
+                    CaptureExposure = CameraExposureMode.Night,
+                    CaptureHeight = 0,
+                    CaptureWidth = 0,
+                    CaptureJpegQuality = 50,
+                    CaptureMeteringMode = CameraMeteringMode.Spot,
+                    VerticalFlip = true
+                };
 
-            Console.WriteLine($"Taking photo");
+                Console.WriteLine($"Taking photo");
 
-            pictureBytes = await Pi.Camera.CaptureImageAsync(cameraStillSettings);
+                pictureBytes = await Pi.Camera.CaptureImageAsync(cameraStillSettings);
 
-            Console.WriteLine($"Photo taken: {pictureBytes.Length} bytes");
+                Console.WriteLine($"Photo taken: {pictureBytes.Length} bytes");
+            }
         }
 
         /// <summary>
