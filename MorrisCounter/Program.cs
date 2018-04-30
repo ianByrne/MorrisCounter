@@ -11,6 +11,8 @@ namespace MorrisCounter
 {
     class Program
     {
+        private static PirSensor pirSensor = null;
+
         static void Main(string[] args)
         {
             try
@@ -21,7 +23,7 @@ namespace MorrisCounter
 
                 SetEnvVars();
 
-                PirSensor pirSensor = new PirSensor("frontdoor", "FrontDoor", Pi.Gpio.Pin07, Pi.Gpio.Pin00);
+                pirSensor = new PirSensor("frontdoor", "FrontDoor", Pi.Gpio.Pin07, Pi.Gpio.Pin00);
 
                 while (true)
                 {
@@ -33,6 +35,10 @@ namespace MorrisCounter
                 Console.WriteLine($"Error: {ex.Message}: {ex.InnerException?.Message}");
                 Console.WriteLine(ex.StackTrace);
             }
+            finally
+            {
+                pirSensor?.Dispose();
+            }
         }
 
         /// <summary>
@@ -41,6 +47,7 @@ namespace MorrisCounter
         /// <param name="obj"></param>
         private static void SigTermEventHandler(AssemblyLoadContext obj)
         {
+            pirSensor?.Dispose();
             Console.WriteLine("Application ended");
         }
 
@@ -51,6 +58,7 @@ namespace MorrisCounter
         /// <param name="e"></param>
         private static void CancelHandler(object sender, ConsoleCancelEventArgs e)
         {
+            pirSensor?.Dispose();
             Console.WriteLine("Application ended");
         }
 
