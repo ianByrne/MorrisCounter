@@ -8,7 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Devices.Client" Version="1.7.1" />
     <PackageReference Include="Q42.HueApi" Version="3.6.3" />
-    <!--<PackageReference Include="Unosquare.Raspberry.IO" Version="0.14.0" />-->
+    <PackageReference Include="Unosquare.Raspberry.IO" Version="0.14.0" />
   </ItemGroup>
 
   <ItemGroup>
