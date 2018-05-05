@@ -17,10 +17,8 @@ namespace MorrisCounter.Entities
     {
         private readonly string cameraLocation;
         private DeviceClient deviceClient;
-        private int chunkCount = 0;
-        private List<byte> firstChunk = new List<byte>();
-        private List<byte> previousChunk = new List<byte>();
-        private List<byte> currentChunk = new List<byte>();
+        private List<byte> currentBytes = new List<byte>();
+        private List<byte> previousBytes = new List<byte>();
 
         /// <summary>
         /// Prepares the IoTHub client
@@ -43,18 +41,21 @@ namespace MorrisCounter.Entities
             var videoSettings = new CameraVideoSettings()
             {
                 CaptureTimeoutMilliseconds = 0,
+                //CaptureQuantisation = 10,
                 CaptureDisplayPreview = false,
                 ImageFlipVertically = true,
+                //CaptureFramerate = 25,
+                //CaptureKeyframeRate = 1,
                 CaptureExposure = CameraExposureMode.Night,
                 CaptureWidth = 1280,
                 CaptureHeight = 720,
+                //CaptureProfile = CameraH264Profile.High,
                 CaptureDisplayPreviewEncoded = false,
                 ImageAnnotationsText = "Time %X",
                 ImageAnnotations = CameraAnnotation.Time | CameraAnnotation.FrameNumber
             };
 
             // Start the video recording
-            Console.WriteLine("Opening video stream");
             Pi.Camera.OpenVideoStream(videoSettings,
                 onDataCallback: (data) => ProcessVideoStream(data),
                 onExitCallback: null);
@@ -62,31 +63,23 @@ namespace MorrisCounter.Entities
 
         private void ProcessVideoStream(byte[] data)
         {
-            chunkCount++;
+            currentBytes.AddRange(data);
 
-            if (chunkCount <= 10)
-            {
-                firstChunk.AddRange(data);
-            }
-            else
-            {
-                currentChunk.AddRange(data);
-            }
+            //Console.WriteLine($"this {data.Length}, current: {currentBytes.Count}");
 
-            // Keep only the last 5mb
-            int bytesToKeep = 3 * 1024 * 1024;
-            if(currentChunk.Count >= bytesToKeep)
+            // Keep segments in 2mb chunks
+            int bytesToKeep = 2 * 1024 * 1024;
+            if(currentBytes.Count >= bytesToKeep)
             {
                 StopVideoStream();
-                previousChunk = currentChunk;
-                currentChunk = new List<byte>();
+                previousBytes = currentBytes;
+                currentBytes = new List<byte>();
                 StartVideoStream();
             }
         }
 
         public void StopVideoStream()
         {
-            Console.WriteLine("Closing video stream");
             Pi.Camera.CloseVideoStream();
 
             // Apparently it takes a while to actually stop the stream
@@ -94,28 +87,32 @@ namespace MorrisCounter.Entities
             Thread.Sleep(1000);
         }
 
+        public byte[] GetVideoBytes()
+        {
+            List<byte> bytes = new List<byte>();
+
+            bytes.AddRange(previousBytes);
+            bytes.AddRange(currentBytes);
+            
+            return bytes.ToArray();
+        }
+
         /// <summary>
         /// Uploads the video to Azure IoTHub (which is linked to Cloud Storage)
         /// </summary>
         /// <param name="timestamp">The timestamp of the detection</param>
         /// <returns></returns>
-        public async Task UploadVideoToAzure(DateTime timestamp)
+        public async Task UploadVideoToAzure(DateTime timestamp, byte[] bytes)
         {
             try
             {
-                // Append the two chunks into one stream
-                List<byte> bytes = new List<byte>();
-                bytes.AddRange(firstChunk);
-                bytes.AddRange(previousChunk);
-                bytes.AddRange(currentChunk);
-
-                if (bytes.Count > 0)
+                if (bytes.Length > 0)
                 {
                     string filename = cameraLocation + " " + timestamp.ToString("yyyy-MM-dd HH:mm:ss") + ".h264";
 
                     Console.WriteLine($"Uploading '{filename}'");
 
-                    await deviceClient.UploadToBlobAsync(filename, new MemoryStream(bytes.ToArray()));
+                    await deviceClient.UploadToBlobAsync(filename, new MemoryStream(bytes));
 
                     Console.WriteLine($"'{filename}' uploaded");
                 }

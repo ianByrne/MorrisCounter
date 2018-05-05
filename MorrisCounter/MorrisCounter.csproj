@@ -2,32 +2,43 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Devices.Client" Version="1.7.1" />
+    <PackageReference Include="Microsoft.Azure.CognitiveServices.Vision.ComputerVision" Version="1.0.2-preview" />
+    <PackageReference Include="Microsoft.Azure.Devices.Client" Version="1.17.0-preview-006" />
     <PackageReference Include="Q42.HueApi" Version="3.6.3" />
-    <PackageReference Include="Unosquare.Raspberry.IO" Version="0.14.0" />
+    <!--<PackageReference Include="Unosquare.Raspberry.IO" Version="0.14.0" />-->
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Unosquare.RaspberryIO">
-      <HintPath>..\..\..\..\Desktop\raspberryio-Issue38-CTToOpenVideoStream\src\Unosquare.RaspberryIO\bin\Release\netstandard2.0\Unosquare.RaspberryIO.dll</HintPath>
-    </Reference>
-    <Reference Include="Unosquare.RaspberryIO.Peripherals">
-      <HintPath>..\..\..\..\Desktop\raspberryio-Issue38-CTToOpenVideoStream\src\Unosquare.RaspberryIO.Playground\bin\Release\netcoreapp2.0\linux-arm\Unosquare.RaspberryIO.Peripherals.dll</HintPath>
-    </Reference>
-    <Reference Include="Unosquare.RaspberryIO.Playground">
-      <HintPath>..\..\..\..\Desktop\raspberryio-Issue38-CTToOpenVideoStream\src\Unosquare.RaspberryIO.Playground\bin\Release\netcoreapp2.0\linux-arm\Unosquare.RaspberryIO.Playground.dll</HintPath>
-    </Reference>
-    <Reference Include="Unosquare.Swan">
-      <HintPath>..\..\..\..\Desktop\raspberryio-Issue38-CTToOpenVideoStream\src\Unosquare.RaspberryIO.Playground\bin\Release\net452\linux-arm\Unosquare.Swan.dll</HintPath>
-    </Reference>
-    <Reference Include="Unosquare.Swan.Lite">
-      <HintPath>..\..\..\..\Desktop\raspberryio-Issue38-CTToOpenVideoStream\src\Unosquare.RaspberryIO.Playground\bin\Release\net452\linux-arm\Unosquare.Swan.Lite.dll</HintPath>
+    <ProjectReference Include="..\..\raspberryio\src\Unosquare.RaspberryIO\Unosquare.RaspberryIO.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Drawing">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5.2\System.Drawing.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <!--<ItemGroup>
+    <Reference Include="Unosquare.RaspberryIO">
+      <HintPath>..\..\raspberryio\src\Unosquare.RaspberryIO.Playground\bin\Release\netcoreapp2.0\linux-arm\publish\Unosquare.RaspberryIO.dll</HintPath>
+    </Reference>
+    <Reference Include="Unosquare.RaspberryIO.Peripherals">
+      <HintPath>..\..\raspberryio\src\Unosquare.RaspberryIO.Playground\bin\Release\netcoreapp2.0\linux-arm\publish\Unosquare.RaspberryIO.Peripherals.dll</HintPath>
+    </Reference>
+    <Reference Include="Unosquare.RaspberryIO.Playground">
+      <HintPath>..\..\raspberryio\src\Unosquare.RaspberryIO.Playground\bin\Release\netcoreapp2.0\linux-arm\publish\Unosquare.RaspberryIO.Playground.dll</HintPath>
+    </Reference>
+    <Reference Include="Unosquare.Swan">
+      <HintPath>..\..\raspberryio\src\Unosquare.RaspberryIO.Playground\bin\Release\netcoreapp2.0\linux-arm\publish\Unosquare.Swan.dll</HintPath>
+    </Reference>
+    <Reference Include="Unosquare.Swan.Lite">
+      <HintPath>..\..\raspberryio\src\Unosquare.RaspberryIO.Playground\bin\Release\netcoreapp2.0\linux-arm\publish\Unosquare.Swan.Lite.dll</HintPath>
+    </Reference>
+  </ItemGroup>-->
 
   <ItemGroup>
     <None Update="sekruts.json">
