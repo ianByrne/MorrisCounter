@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -12,33 +13,35 @@ namespace MorrisCounter.Entities
     {
         private byte[] Bytes { get; }
         private string BaseDirectory { get; }
-        private string H264File { get; }
-        private string MP4File { get; }
-        private string ImageFileStem { get; }
-        private string ImageFileExt { get; }
-        private string[] SoughtTags { get; }
+        private string VideoFile { get; }
+        private string ImageFile { get; }
 
         public bool ContainsSoughtTags { get; private set; } = false;
 
-        public VideoAnalyser(byte[] bytes, string[] soughtTags, DateTime timestamp)
+        public VideoAnalyser(byte[] bytes, DateTime timestamp)
         {
             Bytes = bytes;
-            SoughtTags = soughtTags;
-            BaseDirectory = $"/home/pi/images/{timestamp.ToString("yyyy-MM-dd-HH:mm:ss")}";
-            H264File = $"/input.h264";
-            MP4File = $"/input.mp4";
-            ImageFileStem = $"frame";
-            ImageFileExt = $".jpg";
+            BaseDirectory = $"{RaspberryPiCameraTrap.Current.Settings.TempProcessingBaseDirectory}/{timestamp.ToString("yyyy-MM-dd-HH:mm:ss")}";
+
+            VideoFile = BaseDirectory + "/" +
+                RaspberryPiCameraTrap.Current.Settings.TempProcessingVideoFile + "." +
+                RaspberryPiCameraTrap.Current.Settings.TempProcessingVideoFileExt;
+
+            ImageFile = BaseDirectory + "/" +
+                RaspberryPiCameraTrap.Current.Settings.TempProcessingImageFile + "%3d." + 
+                RaspberryPiCameraTrap.Current.Settings.TempProcessingImageFileExt;
 
             Directory.CreateDirectory(BaseDirectory);
         }
 
-        public async Task AnalyseVideo(int fps)
+        public async Task<List<string>> AnalyseVideo(int fps)
         {
             Console.WriteLine($"Analysing video {Bytes.Length} bytes");
 
-            WriteH264File();
+            WriteVideoFile();
             ExtractFrames(fps);
+
+            List<string> tags = new List<string>();
 
             try
             {
@@ -48,30 +51,34 @@ namespace MorrisCounter.Entities
                 IComputerVisionAPI azure = new ComputerVisionAPI(creds);
                 azure.AzureRegion = AzureRegions.Westeurope;
 
-                string[] jpgFiles = Directory.GetFiles(BaseDirectory, $"*{ImageFileExt}").Select(Path.GetFileName).ToArray();
+                string[] frameFiles = Directory.GetFiles(BaseDirectory, $"*{RaspberryPiCameraTrap.Current.Settings.TempProcessingImageFileExt}")
+                    .Select(Path.GetFileName).ToArray();
 
-                foreach (string jpgFile in jpgFiles)
+                // So that the latest ones are more likely to get scanned before 429 errors happen
+                frameFiles.Reverse();
+
+                foreach (string frameFile in frameFiles)
                 {
-                    Console.WriteLine($"{jpgFile}");
-                    Stream stream = new FileStream(BaseDirectory + "/" + jpgFile, FileMode.Open);
-                    var wat = await azure.TagImageInStreamAsync(stream);
-                    foreach (var tag in wat.Tags)
-                    {
-                        Console.WriteLine($"Tag: {tag.Name}");
-                    }
-                    break;
+                    Stream stream = new FileStream(BaseDirectory + "/" + frameFile, FileMode.Open);
+                    TagResult tagResult = await azure.TagImageInStreamAsync(stream);
+                    tags.AddRange(tagResult.Tags.Select(tag => tag.Name));
                 }
             }
             catch(Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message} {ex.InnerException?.Message}");
             }
+
+            tags = tags.Distinct().ToList();
+
+            Console.WriteLine($"Tags retreived: {string.Join(",",tags)}");
+
+            return tags;
         }
 
-        private void WriteH264File()
+        private void WriteVideoFile()
         {
-            // First, write the h264 to disk
-            using (FileStream fs = new FileStream(BaseDirectory + H264File, FileMode.Create, FileAccess.Write))
+            using (FileStream fs = new FileStream(VideoFile, FileMode.Create, FileAccess.Write))
             {
                 fs.Write(Bytes, 0, Bytes.Length);
             }
@@ -84,7 +91,7 @@ namespace MorrisCounter.Entities
             // Run ffmpeg to extract the frames
             Process process = new Process();
             process.StartInfo.FileName = "ffmpeg";
-            process.StartInfo.Arguments = $"-i {BaseDirectory + H264File} -r {fps}/1 -f image2 {BaseDirectory}/{ImageFileStem}%3d{ImageFileExt} -hide_banner -loglevel fatal";
+            process.StartInfo.Arguments = $"-i {VideoFile} -r {fps}/1 -f image2 {ImageFile} -hide_banner -loglevel fatal";
             process.Start();
             process.WaitForExit();
 

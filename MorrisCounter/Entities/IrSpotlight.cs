@@ -6,7 +6,7 @@ namespace MorrisCounter.Entities
     /// <summary>
     /// Handles an infrared spotlight to illuminate dark areas at night
     /// </summary>
-    class IrSpotlight
+    class IrSpotlight : IDisposable
     {
         private GpioPin spotlightPin;
 
@@ -36,6 +36,11 @@ namespace MorrisCounter.Entities
         {
             Console.WriteLine("Switching off IR spotlight");
             spotlightPin.Write(false);
+        }
+
+        public void Dispose()
+        {
+            SwitchOff();
         }
     }
 }
