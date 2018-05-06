@@ -1,7 +1,7 @@
 ﻿using Unosquare.RaspberryIO.Camera;
 using Unosquare.RaspberryIO.Gpio;
 
-namespace MorrisCounter.Entities
+namespace MorrisCounter
 {
     public class RaspberryPiCameraTrapSettings
     {

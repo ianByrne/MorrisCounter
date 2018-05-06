@@ -1,13 +1,14 @@
 ﻿using Microsoft.Azure.Devices.Client;
+using MorrisCounter.Entities;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MorrisCounter.Entities
+namespace MorrisCounter
 {
     public class RaspberryPiCameraTrap : IDisposable
     {
-        private RaspberryPiCameraTrap(string location, RaspberryPiCameraTrapSettings settings)
+        public RaspberryPiCameraTrap(string location, RaspberryPiCameraTrapSettings settings)
         {
             Location = location;
             Settings = settings;
@@ -32,46 +33,16 @@ namespace MorrisCounter.Entities
             sensor.MotionDetected += MotionDetected;
         }
 
-        public static RaspberryPiCameraTrap Current
-        {
-            get
-            {
-                if (current == null)
-                {
-                    throw new Exception($"This needs to be wrapped by {nameof(Execute)}");
-                }
-
-                return current;
-            }
-            private set
-            {
-                current = value;
-            }
-        }
-
-        private static RaspberryPiCameraTrap current = null;
-
-        public RaspberryPiCameraTrapSettings Settings { get; }
-        public string Location { get; }
-        public DeviceClient DeviceClient { get; }
-
+        private RaspberryPiCameraTrapSettings Settings { get; }
+        private string Location { get; }
+        private DeviceClient DeviceClient { get; }
         private IrSpotlight Spotlight { get; }
         private PiCamera Camera { get; }
         private HueLights HueLights { get; }
 
-        public static void Execute(string location, RaspberryPiCameraTrapSettings settings)
-        {
-            Current = new RaspberryPiCameraTrap(location, settings);
-
-            while (true)
-            {
-                Thread.Sleep(2000);
-            }
-        }
-
         private async void MotionDetected(object obj, EventArgs args)
         {
-            Detection detection = new Detection();
+            Detection detection = new Detection(Location);
 
             // Send off the request to flash the Hue lights
             Task flashLights = Task.Run(() => HueLights.Alert());
@@ -81,10 +52,15 @@ namespace MorrisCounter.Entities
             detection.VideoBytes = Camera.GetVideoBytes();
 
             await flashLights;
-            await detection.AnalyseVideo();
+            await detection.AnalyseVideo(
+                Settings.TempProcessingBaseDirectory,
+                Settings.TempProcessingImageFile,
+                Settings.TempProcessingImageFileExt,
+                Settings.TempProcessingVideoFile,
+                Settings.TempProcessingVideoFileExt);
 
-            await detection.SendIoTMessageToAzure();
-            await detection.UploadVideoToAzure();
+            await detection.SendIoTMessageToAzure(DeviceClient);
+            await detection.UploadVideoToAzure(DeviceClient, Settings.TempProcessingVideoFileExt);
         }
 
         public void Dispose()

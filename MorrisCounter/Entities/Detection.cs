@@ -10,23 +10,25 @@ namespace MorrisCounter.Entities
 {
     public class Detection
     {
-        public Detection()
+        public Detection(string location)
         {
             Timestamp = DateTime.UtcNow;
+            Location = location;
 
-            Console.WriteLine($"{Timestamp.ToString("yyyy-MM-dd HH:mm:ss")} - Motion detected at {RaspberryPiCameraTrap.Current.Location}!");
+            Console.WriteLine($"{Timestamp.ToString("yyyy-MM-dd HH:mm:ss")} - Motion detected at {Location}!");
         }
 
         public byte[] VideoBytes { get; set; }
 
         private DateTime Timestamp { get; }
+        private string Location { get; }
         private List<string> Tags { get; set; }
 
-        public async Task AnalyseVideo()
+        public async Task AnalyseVideo(string baseDir, string imageFileName, string imageFileExt, string videoFileName, string videoFileExt)
         {
             if (VideoBytes != null && VideoBytes.Length > 0)
             {
-                using (VideoAnalyser videoAnalyser = new VideoAnalyser(VideoBytes, Timestamp))
+                using (VideoAnalyser videoAnalyser = new VideoAnalyser(VideoBytes, Timestamp, baseDir, videoFileName, videoFileExt, imageFileName, imageFileExt))
                 {
                     Tags = await videoAnalyser.AnalyseVideo(3);
                 }
@@ -37,21 +39,21 @@ namespace MorrisCounter.Entities
             }
         }
 
-        public async Task SendIoTMessageToAzure()
+        public async Task SendIoTMessageToAzure(DeviceClient deviceClient)
         {
             Console.WriteLine("Sending message to IoT Hub");
 
             string messageString = JsonConvert.SerializeObject(new
             {
                 timestamp = Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
-                location = RaspberryPiCameraTrap.Current.Location,
+                location = Location,
                 tags = Tags,
                 videoBytes = VideoBytes?.Length
             });
 
             Message message = new Message(Encoding.ASCII.GetBytes(messageString));
 
-            await RaspberryPiCameraTrap.Current.DeviceClient.SendEventAsync(message);
+            await deviceClient.SendEventAsync(message);
 
             Console.WriteLine("Sent message to IoT Hub");
         }
@@ -61,19 +63,18 @@ namespace MorrisCounter.Entities
         /// </summary>
         /// <param name="timestamp">The timestamp of the detection</param>
         /// <returns></returns>
-        public async Task UploadVideoToAzure()
+        public async Task UploadVideoToAzure(DeviceClient deviceClient, string videoFileExt)
         {
             try
             {
                 if (VideoBytes != null && VideoBytes.Length > 0)
                 {
-                    string filename = RaspberryPiCameraTrap.Current.Location + " " +
-                        Timestamp.ToString("yyyy-MM-dd HH:mm:ss") + "." +
-                        RaspberryPiCameraTrap.Current.Settings.TempProcessingVideoFileExt;
+                    string filename = Location + " " +
+                        Timestamp.ToString("yyyy-MM-dd HH:mm:ss") + "." + videoFileExt;
 
                     Console.WriteLine($"Uploading '{filename}'");
 
-                    await RaspberryPiCameraTrap.Current.DeviceClient.UploadToBlobAsync(filename, new MemoryStream(VideoBytes));
+                    await deviceClient.UploadToBlobAsync(filename, new MemoryStream(VideoBytes));
 
                     Console.WriteLine($"'{filename}' uploaded");
                 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
@@ -15,21 +16,21 @@ namespace MorrisCounter.Entities
         private string BaseDirectory { get; }
         private string VideoFile { get; }
         private string ImageFile { get; }
+        private string ImageFileExt { get; }
 
         public bool ContainsSoughtTags { get; private set; } = false;
 
-        public VideoAnalyser(byte[] bytes, DateTime timestamp)
+        public VideoAnalyser(byte[] bytes, DateTime timestamp,
+            string baseDir, string videoFileName, string videoFileExt,
+            string imageFileName, string imageFileExt)
         {
             Bytes = bytes;
-            BaseDirectory = $"{RaspberryPiCameraTrap.Current.Settings.TempProcessingBaseDirectory}/{timestamp.ToString("yyyy-MM-dd-HH:mm:ss")}";
+            ImageFileExt = imageFileExt;
 
-            VideoFile = BaseDirectory + "/" +
-                RaspberryPiCameraTrap.Current.Settings.TempProcessingVideoFile + "." +
-                RaspberryPiCameraTrap.Current.Settings.TempProcessingVideoFileExt;
+            BaseDirectory = $"{baseDir}/{timestamp.ToString("yyyy-MM-dd-HH:mm:ss")}";
 
-            ImageFile = BaseDirectory + "/" +
-                RaspberryPiCameraTrap.Current.Settings.TempProcessingImageFile + "%3d." + 
-                RaspberryPiCameraTrap.Current.Settings.TempProcessingImageFileExt;
+            VideoFile = BaseDirectory + "/" + videoFileName + "." + videoFileExt;
+            ImageFile = BaseDirectory + "/" + imageFileName + "%3d." + imageFileExt;
 
             Directory.CreateDirectory(BaseDirectory);
         }
@@ -43,35 +44,38 @@ namespace MorrisCounter.Entities
 
             List<string> tags = new List<string>();
 
-            try
+
+            Console.WriteLine("Connecting to Azure");
+
+            ApiKeyServiceClientCredentials creds = new ApiKeyServiceClientCredentials(Environment.GetEnvironmentVariable("computerVisionApiKey"));
+            IComputerVisionAPI azure = new ComputerVisionAPI(creds, new HttpThrottleHandler(new HttpClientHandler()));
+            azure.AzureRegion = AzureRegions.Westeurope;
+
+            string[] frameFiles = Directory.GetFiles(BaseDirectory, $"*{ImageFileExt}")
+                .Select(Path.GetFileName).ToArray();
+
+            // So that the latest ones are more likely to get scanned before 429 errors happen
+            frameFiles.Reverse();
+
+            Console.WriteLine($"Processing {frameFiles.Length} frames");
+
+            foreach (string frameFile in frameFiles)
             {
-                Console.WriteLine("Connecting to Azure");
-                
-                ApiKeyServiceClientCredentials creds = new ApiKeyServiceClientCredentials(Environment.GetEnvironmentVariable("computerVisionApiKey"));
-                IComputerVisionAPI azure = new ComputerVisionAPI(creds);
-                azure.AzureRegion = AzureRegions.Westeurope;
-
-                string[] frameFiles = Directory.GetFiles(BaseDirectory, $"*{RaspberryPiCameraTrap.Current.Settings.TempProcessingImageFileExt}")
-                    .Select(Path.GetFileName).ToArray();
-
-                // So that the latest ones are more likely to get scanned before 429 errors happen
-                frameFiles.Reverse();
-
-                foreach (string frameFile in frameFiles)
+                try
                 {
                     Stream stream = new FileStream(BaseDirectory + "/" + frameFile, FileMode.Open);
                     TagResult tagResult = await azure.TagImageInStreamAsync(stream);
                     tags.AddRange(tagResult.Tags.Select(tag => tag.Name));
                 }
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message} {ex.InnerException?.Message}");
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message} {ex.InnerException?.Message}");
+                }
             }
 
             tags = tags.Distinct().ToList();
 
-            Console.WriteLine($"Tags retreived: {string.Join(",",tags)}");
+            Console.WriteLine($"Tags retreived: {string.Join(",", tags)}");
 
             return tags;
         }

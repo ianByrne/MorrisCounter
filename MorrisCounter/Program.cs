@@ -11,6 +11,8 @@ namespace MorrisCounter
 {
     class Program
     {
+        private static RaspberryPiCameraTrap cameraTrap = null;
+
         static void Main(string[] args)
         {
             try
@@ -60,7 +62,9 @@ namespace MorrisCounter
                 };
 
                 // Do the needful
-                RaspberryPiCameraTrap.Execute("frontdoor", trapSettings);
+                cameraTrap = new RaspberryPiCameraTrap("frontdoor", trapSettings);
+
+                Console.ReadLine();
             }
             catch (Exception ex)
             {
@@ -70,7 +74,7 @@ namespace MorrisCounter
             finally
             {
                 Console.WriteLine("Finally block");
-                RaspberryPiCameraTrap.Current.Dispose();
+                cameraTrap?.Dispose();
             }
         }
 
@@ -80,7 +84,7 @@ namespace MorrisCounter
         /// <param name="obj"></param>
         private static void SigTermEventHandler(AssemblyLoadContext obj)
         {
-            RaspberryPiCameraTrap.Current.Dispose();
+            cameraTrap?.Dispose();
             Console.WriteLine("Application ended");
         }
 
@@ -91,7 +95,7 @@ namespace MorrisCounter
         /// <param name="e"></param>
         private static void CancelHandler(object sender, ConsoleCancelEventArgs e)
         {
-            RaspberryPiCameraTrap.Current.Dispose();
+            cameraTrap?.Dispose();
             Console.WriteLine("Application ended");
         }
 
