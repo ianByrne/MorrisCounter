@@ -20,7 +20,7 @@ namespace MorrisCounter.Entities
                 // Get the throttle duration from the headers
                 int throttleDuration = Convert.ToInt32(response.Headers.RetryAfter.ToString()) * 1000;
 
-                Console.WriteLine($@"Throttled for {throttleDuration}ms");
+                //Console.WriteLine($@"Throttled for {throttleDuration}ms");
 
                 Thread.Sleep(throttleDuration);
 

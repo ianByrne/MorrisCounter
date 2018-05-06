@@ -45,7 +45,7 @@ namespace MorrisCounter.Entities
             List<string> tags = new List<string>();
 
 
-            Console.WriteLine("Connecting to Azure");
+            //Console.WriteLine("Connecting to Azure");
 
             ApiKeyServiceClientCredentials creds = new ApiKeyServiceClientCredentials(Environment.GetEnvironmentVariable("computerVisionApiKey"));
             IComputerVisionAPI azure = new ComputerVisionAPI(creds, new HttpThrottleHandler(new HttpClientHandler()));
@@ -69,7 +69,7 @@ namespace MorrisCounter.Entities
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error: {ex.Message} {ex.InnerException?.Message}");
+                    //Console.WriteLine($"Error: {ex.Message} {ex.InnerException?.Message}");
                 }
             }
 
@@ -99,7 +99,7 @@ namespace MorrisCounter.Entities
             process.Start();
             process.WaitForExit();
 
-            Console.WriteLine("Finished extracting frames");
+            //Console.WriteLine("Finished extracting frames");
         }
 
         public void Dispose()
