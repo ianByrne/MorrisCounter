@@ -48,7 +48,7 @@ namespace MorrisCounter
             Task flashLights = Task.Run(() => HueLights.Alert());
 
             // Let the camera run for a bit to grab a tail-end buffer
-            Thread.Sleep(3000);
+            Thread.Sleep(4000);
             detection.VideoBytes = Camera.GetVideoBytes();
 
             await flashLights;
