@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Unosquare.RaspberryIO;
 using System.Runtime.Loader;
 using Unosquare.RaspberryIO.Camera;
+using System.Threading;
 
 namespace MorrisCounter
 {
@@ -64,7 +65,10 @@ namespace MorrisCounter
                 // Do the needful
                 cameraTrap = new RaspberryPiCameraTrap("frontdoor", trapSettings);
 
-                Console.ReadLine();
+                while(true)
+                {
+                    Thread.Sleep(3000);
+                }
             }
             catch (Exception ex)
             {
