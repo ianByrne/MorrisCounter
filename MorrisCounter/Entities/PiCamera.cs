@@ -16,19 +16,22 @@ namespace MorrisCounter.Entities
     class PiCamera : IDisposable
     {
         private CameraVideoSettings CameraSettings { get; }
-        private int ChunkSize { get; }
+        private DateTime ChunkStartTime { get; set; }
+        private int ChunkDuration { get; }
 
         private List<byte> currentBytes = new List<byte>();
         private List<byte> previousBytes = new List<byte>();
 
-        public PiCamera(CameraVideoSettings cameraSettings, int chunkSize)
+        public PiCamera(CameraVideoSettings cameraSettings, int chunkDuration)
         {
             CameraSettings = cameraSettings;
-            ChunkSize = chunkSize;
+            ChunkDuration = chunkDuration;
         }
 
         public void StartVideoStream()
         {
+            ChunkStartTime = DateTime.UtcNow;
+
             // Start the video recording
             Pi.Camera.OpenVideoStream(CameraSettings,
                 onDataCallback: (data) => ProcessVideoStream(data),
@@ -40,8 +43,7 @@ namespace MorrisCounter.Entities
             currentBytes.AddRange(data);
 
             // Keep segments in chunks
-            int bytesToKeep = ChunkSize * 1024 * 1024;
-            if(currentBytes.Count >= bytesToKeep)
+            if(ChunkStartTime <= DateTime.UtcNow.AddSeconds(ChunkDuration))
             {
                 StopVideoStream();
                 previousBytes = currentBytes;

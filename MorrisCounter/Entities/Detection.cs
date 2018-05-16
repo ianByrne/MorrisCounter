@@ -30,7 +30,7 @@ namespace MorrisCounter.Entities
             {
                 using (VideoAnalyser videoAnalyser = new VideoAnalyser(VideoBytes, Timestamp, baseDir, videoFileName, videoFileExt, imageFileName, imageFileExt))
                 {
-                    Tags = await videoAnalyser.AnalyseVideo(3);
+                    Tags = await videoAnalyser.AnalyseVideo(1);
                 }
             }
             else
@@ -41,7 +41,7 @@ namespace MorrisCounter.Entities
 
         public async Task SendIoTMessageToAzure(DeviceClient deviceClient)
         {
-            Console.WriteLine("Sending message to IoT Hub");
+            //Console.WriteLine("Sending message to IoT Hub");
 
             string messageString = JsonConvert.SerializeObject(new
             {
@@ -72,7 +72,7 @@ namespace MorrisCounter.Entities
                     string filename = Location + " " +
                         Timestamp.ToString("yyyy-MM-dd HH:mm:ss") + "." + videoFileExt;
 
-                    Console.WriteLine($"Uploading '{filename}'");
+                    //Console.WriteLine($"Uploading '{filename}'");
 
                     await deviceClient.UploadToBlobAsync(filename, new MemoryStream(VideoBytes));
 

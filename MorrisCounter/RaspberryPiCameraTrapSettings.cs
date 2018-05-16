@@ -20,6 +20,6 @@ namespace MorrisCounter
         public string TempProcessingImageFileExt { get; set; }
         public string TempProcessingVideoFileExt { get; set; }
         public CameraVideoSettings CameraSettings { get; set; }
-        public int VideoChunkSize { get; set; }
+        public int VideoChunkDuration { get; set; }
     }
 }

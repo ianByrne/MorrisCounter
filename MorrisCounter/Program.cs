@@ -30,7 +30,7 @@ namespace MorrisCounter
                     CaptureTimeoutMilliseconds = 0,
                     //CaptureQuantisation = 10,
                     CaptureDisplayPreview = false,
-                    ImageFlipVertically = true,
+                    ImageFlipVertically = false,
                     //CaptureFramerate = 25,
                     //CaptureKeyframeRate = 1,
                     CaptureExposure = CameraExposureMode.Night,
@@ -58,7 +58,7 @@ namespace MorrisCounter
                     TempProcessingImageFileExt = "jpg",
                     TempProcessingVideoFile = "input",
                     TempProcessingVideoFileExt = "h264",
-                    VideoChunkSize = 2,
+                    VideoChunkDuration = -8,
                     CameraSettings = cameraSettings
                 };
 

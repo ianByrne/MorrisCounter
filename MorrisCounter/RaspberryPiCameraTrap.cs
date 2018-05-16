@@ -25,7 +25,7 @@ namespace MorrisCounter
 
             // Start the video stream
             Console.WriteLine("Opening video stream");
-            Camera = new PiCamera(settings.CameraSettings, settings.VideoChunkSize);
+            Camera = new PiCamera(settings.CameraSettings, settings.VideoChunkDuration);
             Camera.StartVideoStream();
 
             // Enable the PIR Sensor and subscribe to the callback
