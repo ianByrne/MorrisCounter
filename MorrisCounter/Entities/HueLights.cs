@@ -19,11 +19,11 @@ namespace MorrisCounter.Entities
         /// <summary>
         /// Connects to the HueBridge and sets up the 'alarm' state of the lights
         /// </summary>
-        public HueLights()
+        public HueLights(string hueBridgeIp, string hueKey)
         {
             // Connect to the Hue Bridge
-            client = new LocalHueClient(Environment.GetEnvironmentVariable("hueBridgeIp"));
-            client.Initialize(Environment.GetEnvironmentVariable("hueKey"));
+            client = new LocalHueClient(hueBridgeIp);
+            client.Initialize(hueKey);
 
             // Setup the 'alarm' state of the lights (red and bright)
             alarmState = new LightCommand();

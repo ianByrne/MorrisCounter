@@ -5,12 +5,15 @@ using System.IO;
 using System.Collections.Generic;
 using Unosquare.RaspberryIO;
 using System.Runtime.Loader;
+using Unosquare.RaspberryIO.Camera;
 using System.Threading;
 
 namespace MorrisCounter
 {
     class Program
     {
+        private static RaspberryPiCameraTrap cameraTrap = null;
+
         static void Main(string[] args)
         {
             try
@@ -21,17 +24,61 @@ namespace MorrisCounter
 
                 SetEnvVars();
 
-                PirSensor pirSensor = new PirSensor("frontdoor", "FrontDoor", Pi.Gpio.Pin07, Pi.Gpio.Pin00);
-
-                while (true)
+                // Configure video settings
+                var cameraSettings = new CameraVideoSettings()
                 {
-                    Thread.Sleep(2000);
+                    CaptureTimeoutMilliseconds = 0,
+                    //CaptureQuantisation = 10,
+                    CaptureDisplayPreview = false,
+                    ImageFlipVertically = false,
+                    //CaptureFramerate = 25,
+                    //CaptureKeyframeRate = 1,
+                    CaptureExposure = CameraExposureMode.Night,
+                    CaptureWidth = 1280,
+                    CaptureHeight = 720,
+                    //CaptureProfile = CameraH264Profile.High,
+                    CaptureDisplayPreviewEncoded = false,
+                    ImageAnnotationsText = "Time %X",
+                    ImageAnnotations = CameraAnnotation.Time | CameraAnnotation.FrameNumber
+                };
+
+                // Configure trap settings
+                RaspberryPiCameraTrapSettings trapSettings = new RaspberryPiCameraTrapSettings()
+                {
+                    ComputerVisionApiKey = Environment.GetEnvironmentVariable("computerVisionApiKey"),
+                    HueBridgeIp = Environment.GetEnvironmentVariable("hueBridgeIp"),
+                    HueKey = Environment.GetEnvironmentVariable("hueKey"),
+                    IotHubDeviceId = Environment.GetEnvironmentVariable("iotHubDeviceId"),
+                    IotHubUri = Environment.GetEnvironmentVariable("iotHubUri"),
+                    IotHubDeviceKey = Environment.GetEnvironmentVariable("iotHubDeviceKey"),
+                    SensorPin = Pi.Gpio.Pin07,
+                    SpotlightPin = Pi.Gpio.Pin00,
+                    TempProcessingBaseDirectory = "/home/pi/images",
+                    TempProcessingImageFile = "frame",
+                    TempProcessingImageFileExt = "jpg",
+                    TempProcessingVideoFile = "input",
+                    TempProcessingVideoFileExt = "h264",
+                    VideoChunkDuration = -8,
+                    CameraSettings = cameraSettings
+                };
+
+                // Do the needful
+                cameraTrap = new RaspberryPiCameraTrap("frontdoor", trapSettings);
+
+                while(true)
+                {
+                    Thread.Sleep(3000);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}: {ex.InnerException?.Message}");
                 Console.WriteLine(ex.StackTrace);
+            }
+            finally
+            {
+                Console.WriteLine("Finally block");
+                cameraTrap?.Dispose();
             }
         }
 
@@ -41,6 +88,7 @@ namespace MorrisCounter
         /// <param name="obj"></param>
         private static void SigTermEventHandler(AssemblyLoadContext obj)
         {
+            cameraTrap?.Dispose();
             Console.WriteLine("Application ended");
         }
 
@@ -51,6 +99,7 @@ namespace MorrisCounter
         /// <param name="e"></param>
         private static void CancelHandler(object sender, ConsoleCancelEventArgs e)
         {
+            cameraTrap?.Dispose();
             Console.WriteLine("Application ended");
         }
 
